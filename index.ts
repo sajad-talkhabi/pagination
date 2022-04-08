@@ -71,16 +71,12 @@ class Pagination extends Template {
         super(pagination);
     }
     makePagination() {
-        const loop = (times: number, callback: Function) => {
-            return new Array(times).fill(0).map((x, i) => callback(i + 1))
-        };
+
         let template = document.querySelector('.pagination')!;
         template.innerHTML = ''
         let code = `
         <a value="${this.pagination!.current_page - 1}">&laquo;</a>
-        ${loop(this.pagination!.last_page, (i: any) => {
-            return `<a ${`class="${this.pagination!.current_page === i ? `pagination__item active` : 'pagination__item'}"`} value="${i}">${i}</a>`
-        })}
+        ${this.makePage()}
         <a value="${this.pagination!.current_page + 1}">&raquo;</a>`
         template.insertAdjacentHTML('beforeend', code);
         template.querySelectorAll('.pagination a').forEach(tag => {
@@ -90,6 +86,26 @@ class Pagination extends Template {
                 this.changePage(page);
             })
         })
+    }
+    makePage() {
+        const loop = (times: number, callback: Function) => {
+            return new Array(times).fill(0).map((x, i) => callback(i + 1))
+        };
+        if (this.pagination!.last_page <= 2) {
+            return loop(this.pagination!.last_page, (i: any) => {
+                return `<a ${`class="${this.pagination!.current_page === i ? `pagination__item active` : 'pagination__item'}"`} value="${i}">${i}</a>`
+            })
+        } else {
+            return (
+                `${loop(2, (i: any) => {
+                    return `<a ${`class="${this.pagination!.current_page === i ? `pagination__item active` : 'pagination__item'}"`} value="${i}">${i}</a>`
+                })}
+                '<span>...</span>'
+                ${loop(this.pagination!.last_page - this.pagination!.current_page, (i: any) => {
+                    return `<a ${`class="${this.pagination!.current_page === i ? `pagination__item active` : 'pagination__item'}"`} value="${i}">${i}</a>`
+                })}`
+            )
+        }
     }
     changePage(page: any) {
         this.pagination!.current_page = page;

@@ -113,14 +113,9 @@ var Pagination = /** @class */ (function (_super) {
     }
     Pagination.prototype.makePagination = function () {
         var _this = this;
-        var loop = function (times, callback) {
-            return new Array(times).fill(0).map(function (x, i) { return callback(i + 1); });
-        };
         var template = document.querySelector('.pagination');
         template.innerHTML = '';
-        var code = "\n        <a value=\"".concat(this.pagination.current_page - 1, "\">&laquo;</a>\n        ").concat(loop(this.pagination.last_page, function (i) {
-            return "<a ".concat("class=\"".concat(_this.pagination.current_page === i ? "pagination__item active" : 'pagination__item', "\""), " value=\"").concat(i, "\">").concat(i, "</a>");
-        }), "\n        <a value=\"").concat(this.pagination.current_page + 1, "\">&raquo;</a>");
+        var code = "\n        <a value=\"".concat(this.pagination.current_page - 1, "\">&laquo;</a>\n        ").concat(this.makePage(), "\n        <a value=\"").concat(this.pagination.current_page + 1, "\">&raquo;</a>");
         template.insertAdjacentHTML('beforeend', code);
         template.querySelectorAll('.pagination a').forEach(function (tag) {
             tag.addEventListener('click', function (e) {
@@ -130,6 +125,24 @@ var Pagination = /** @class */ (function (_super) {
                 _this.changePage(page);
             });
         });
+    };
+    Pagination.prototype.makePage = function () {
+        var _this = this;
+        var loop = function (times, callback) {
+            return new Array(times).fill(0).map(function (x, i) { return callback(i + 1); });
+        };
+        if (this.pagination.last_page <= 2) {
+            return loop(this.pagination.last_page, function (i) {
+                return "<a ".concat("class=\"".concat(_this.pagination.current_page === i ? "pagination__item active" : 'pagination__item', "\""), " value=\"").concat(i, "\">").concat(i, "</a>");
+            });
+        }
+        else {
+            return ("".concat(loop(2, function (i) {
+                return "<a ".concat("class=\"".concat(_this.pagination.current_page === i ? "pagination__item active" : 'pagination__item', "\""), " value=\"").concat(i, "\">").concat(i, "</a>");
+            }), "\n                '<span>...</span>'\n                ").concat(loop(this.pagination.last_page - this.pagination.current_page, function (i) {
+                return "<a ".concat("class=\"".concat(_this.pagination.current_page === i ? "pagination__item active" : 'pagination__item', "\""), " value=\"").concat(i, "\">").concat(i, "</a>");
+            })));
+        }
     };
     Pagination.prototype.changePage = function (page) {
         this.pagination.current_page = page;
