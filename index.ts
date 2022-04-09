@@ -1,3 +1,5 @@
+const ITEMS_CONTAINER = '.items';
+const PAGINATION_CONTAINER = '.pagination';
 // pagination inter face
 export type PaginationInterFace = {
     current_page: number;
@@ -42,10 +44,16 @@ const PerPage: Array<PerPageItem> = [
 class Template {
     pagination?: PaginationInterFace;
     items?: ItemsInterFace[];
-    constructor(pagination?: PaginationInterFace, items?: ItemsInterFace[]) {
+    itemTemplate?: string;
+    itemsContainer?: string | undefined;
+    paginationContainer?: string | undefined
+    constructor(pagination?: PaginationInterFace, items?: ItemsInterFace[], itemTemplate?: string, itemsContainer?: string | undefined, paginationContainer?: string | undefined) {
         this.pagination = pagination;
         this.items = items;
-        console.log('sd', this.items, this.pagination);
+        this.itemTemplate = itemTemplate;
+        this.itemsContainer = itemsContainer;
+        this.paginationContainer = paginationContainer;
+        console.log('sd', this.items, this.pagination, this.itemTemplate, this.itemsContainer, this.paginationContainer);
     }
     async load(url: string) {
         // await (await fetch(`https://app.champya-dev.ir/api/v1/admin/courses${query ? `?${query}` : ''}`, {
@@ -59,22 +67,26 @@ class Template {
             this.items = data;
             this.pagination = meta;
         });
-        const paginationClass = new Pagination(this.pagination);
-        const itemsClass = new Items(this.items);
+        const paginationClass = new Pagination(this.pagination, this.paginationContainer, this.itemTemplate);
+        const itemsClass = new Items(this.items, this.itemsContainer!);
         paginationClass.makePagination();
         paginationClass.makePerPage()
-        itemsClass.makeItems();
+        itemsClass.makeItems(this.itemTemplate);
     }
 }
 class Pagination extends Template {
-    constructor(pagination?: PaginationInterFace) {
-        super(pagination);
+    itemTemplate?: string;
+    paginationContainer?: string;
+    constructor(pagination?: PaginationInterFace, paginationContainer?: string, itemTemplate?: string) {
+        super(pagination, undefined, itemTemplate, ITEMS_CONTAINER, paginationContainer);
+        this.itemTemplate = itemTemplate;
+        this.paginationContainer = paginationContainer;
     }
     makePagination() {
         const loop = (times: number, callback: Function) => {
             return new Array(times).fill(0).map((x, i) => callback(i + 1))
         };
-        let template = document.querySelector('.pagination')!;
+        let template = document.querySelector(this.paginationContainer!)!;
         template.innerHTML = ''
         let code = `
         <a value="${this.pagination!.current_page - 1}">&laquo;</a>
@@ -129,19 +141,21 @@ class Pagination extends Template {
     }
 }
 class Items extends Template {
-    constructor(items: any) {
-        super(undefined, items);
+    itemsContainer?: string | undefined;
+    constructor(items: any, itemsContainer?: string | undefined) {
+        console.log('itemsContainer', itemsContainer);
+        super(undefined, items, undefined, ITEMS_CONTAINER, undefined);
+
+        this.itemsContainer = itemsContainer;
     }
-    makeItems() {
-        const template = document.querySelector('.items')!;
+    makeItems(itemTemplate: string | undefined) {
+        const template = document.querySelector(this.itemsContainer!)!;
         template.innerHTML = '';
         this.items!.map((item: ItemsInterFace) => {
-            template.insertAdjacentHTML('beforeend', `<div class="card col-3 m-3" style="width:400px">
-            <img class="card-img-top" src="${item.thumbnail}" alt="Card image" style="width:100%">
-            <div class="card-body">
-              <h4 class="card-title">${item.title}</hh4>
-            </div>
-            </div>`);
+            console.log(itemTemplate, 'itemTemplate');
+
+            let itemTemplateMustache = mustache(itemTemplate!, item);
+            template.insertAdjacentHTML('beforeend', itemTemplateMustache!);
         })
     }
 }
@@ -165,5 +179,18 @@ const serialize = (originalString: any, matchText: any, addedText: any) => {
     else
         return originalString;
 }
-let x = new Template();
+const mustache = (slug: string, item: any) => {
+    slug = slug.replace(/{{\w+}}/g, (match: any) => {
+        const prop = match.replace("{{", "").replace("}}", "").trim();
+        return item[prop] ?? "";
+    });
+    return slug;
+}
+const ITEMS_TEMPLATE = `<div class="card col-3 m-3" style="width:400px">
+<img class="card-img-top" src="{{thumbnail}}" alt="Card image" style="width:100%">
+<div class="card-body">
+  <h4 class="card-title">{{title}}</hh4>
+</div>
+</div>`
+let x = new Template(undefined, undefined, ITEMS_TEMPLATE, ITEMS_CONTAINER, PAGINATION_CONTAINER);
 x.load('https://app.champya-dev.ir/api/v1/admin/courses');

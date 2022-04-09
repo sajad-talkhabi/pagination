@@ -51,6 +51,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+var ITEMS_CONTAINER = '.items';
+var PAGINATION_CONTAINER = '.pagination';
 var PerPage = [
     {
         index: 1,
@@ -66,10 +68,13 @@ var PerPage = [
     },
 ];
 var Template = /** @class */ (function () {
-    function Template(pagination, items) {
+    function Template(pagination, items, itemTemplate, itemsContainer, paginationContainer) {
         this.pagination = pagination;
         this.items = items;
-        console.log('sd', this.items, this.pagination);
+        this.itemTemplate = itemTemplate;
+        this.itemsContainer = itemsContainer;
+        this.paginationContainer = paginationContainer;
+        console.log('sd', this.items, this.pagination, this.itemTemplate, this.itemsContainer, this.paginationContainer);
     }
     Template.prototype.load = function (url) {
         return __awaiter(this, void 0, void 0, function () {
@@ -94,11 +99,11 @@ var Template = /** @class */ (function () {
                     case 2:
                         // await (await fetch(`https://app.champya-dev.ir/api/v1/admin/courses${query ? `?${query}` : ''}`, {
                         _a.sent();
-                        paginationClass = new Pagination(this.pagination);
-                        itemsClass = new Items(this.items);
+                        paginationClass = new Pagination(this.pagination, this.paginationContainer, this.itemTemplate);
+                        itemsClass = new Items(this.items, this.itemsContainer);
                         paginationClass.makePagination();
                         paginationClass.makePerPage();
-                        itemsClass.makeItems();
+                        itemsClass.makeItems(this.itemTemplate);
                         return [2 /*return*/];
                 }
             });
@@ -108,15 +113,18 @@ var Template = /** @class */ (function () {
 }());
 var Pagination = /** @class */ (function (_super) {
     __extends(Pagination, _super);
-    function Pagination(pagination) {
-        return _super.call(this, pagination) || this;
+    function Pagination(pagination, paginationContainer, itemTemplate) {
+        var _this = _super.call(this, pagination, undefined, itemTemplate, ITEMS_CONTAINER, paginationContainer) || this;
+        _this.itemTemplate = itemTemplate;
+        _this.paginationContainer = paginationContainer;
+        return _this;
     }
     Pagination.prototype.makePagination = function () {
         var _this = this;
         var loop = function (times, callback) {
             return new Array(times).fill(0).map(function (x, i) { return callback(i + 1); });
         };
-        var template = document.querySelector('.pagination');
+        var template = document.querySelector(this.paginationContainer);
         template.innerHTML = '';
         var code = "\n        <a value=\"".concat(this.pagination.current_page - 1, "\">&laquo;</a>\n        ").concat(loop(this.pagination.last_page, function (i) {
             return "<a ".concat("class=\"".concat(_this.pagination.current_page === i ? "pagination__item active" : 'pagination__item', "\""), " value=\"").concat(i, "\">").concat(i, "</a>");
@@ -166,14 +174,20 @@ var Pagination = /** @class */ (function (_super) {
 }(Template));
 var Items = /** @class */ (function (_super) {
     __extends(Items, _super);
-    function Items(items) {
-        return _super.call(this, undefined, items) || this;
+    function Items(items, itemsContainer) {
+        var _this = this;
+        console.log('itemsContainer', itemsContainer);
+        _this = _super.call(this, undefined, items, undefined, ITEMS_CONTAINER, undefined) || this;
+        _this.itemsContainer = itemsContainer;
+        return _this;
     }
-    Items.prototype.makeItems = function () {
-        var template = document.querySelector('.items');
+    Items.prototype.makeItems = function (itemTemplate) {
+        var template = document.querySelector(this.itemsContainer);
         template.innerHTML = '';
         this.items.map(function (item) {
-            template.insertAdjacentHTML('beforeend', "<div class=\"card col-3 m-3\" style=\"width:400px\">\n            <img class=\"card-img-top\" src=\"".concat(item.thumbnail, "\" alt=\"Card image\" style=\"width:100%\">\n            <div class=\"card-body\">\n              <h4 class=\"card-title\">").concat(item.title, "</hh4>\n            </div>\n            </div>"));
+            console.log(itemTemplate, 'itemTemplate');
+            var itemTemplateMustache = mustache(itemTemplate, item);
+            template.insertAdjacentHTML('beforeend', itemTemplateMustache);
         });
     };
     return Items;
@@ -198,5 +212,14 @@ var serialize = function (originalString, matchText, addedText) {
     else
         return originalString;
 };
-var x = new Template();
+var mustache = function (slug, item) {
+    slug = slug.replace(/{{\w+}}/g, function (match) {
+        var _a;
+        var prop = match.replace("{{", "").replace("}}", "").trim();
+        return (_a = item[prop]) !== null && _a !== void 0 ? _a : "";
+    });
+    return slug;
+};
+var ITEMS_TEMPLATE = "<div class=\"card col-3 m-3\" style=\"width:400px\">\n<img class=\"card-img-top\" src=\"{{thumbnail}}\" alt=\"Card image\" style=\"width:100%\">\n<div class=\"card-body\">\n  <h4 class=\"card-title\">{{title}}</hh4>\n</div>\n</div>";
+var x = new Template(undefined, undefined, ITEMS_TEMPLATE, ITEMS_CONTAINER, PAGINATION_CONTAINER);
 x.load('https://app.champya-dev.ir/api/v1/admin/courses');
